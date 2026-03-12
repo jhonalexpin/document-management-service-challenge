@@ -1,0 +1,28 @@
+spring:
+  codec:
+    max-in-memory-size: 500MB
+  main:
+    web-application-type: reactive
+  servlet:
+    multipart:
+      enabled: false
+
+server:
+  tomcat:
+    # Increase max connections for high concurrency
+    max-connections: 10000
+    # Increase threads if your processing is I/O bound
+    threads:
+      max: 200
+    # Connection timeout in milliseconds
+    connection-timeout: 30000
+
+app:
+  # Custom application properties can go here
+  content-types-allowed:
+    - application/pdf
+  minio:
+    endpoint: http://localhost:9001
+    access-key: ${MINIO_ROOT_USER_PROP}
+    secret-key: ${MINIO_ROOT_PASSWORD_PROP}
+    bucket-name: document-bucket
