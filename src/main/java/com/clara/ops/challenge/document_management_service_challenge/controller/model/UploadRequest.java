@@ -1,4 +1,4 @@
-package com.clara.ops.challenge.document_management_service_challenge.controller;
+package com.clara.ops.challenge.document_management_service_challenge.controller.model;
 
 import lombok.Data;
 

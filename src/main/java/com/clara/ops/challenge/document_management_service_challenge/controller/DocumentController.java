@@ -1,12 +1,12 @@
 package com.clara.ops.challenge.document_management_service_challenge.controller;
 
 
-import com.clara.ops.challenge.document_management_service_challenge.config.MinioProperties;
-import com.clara.ops.challenge.document_management_service_challenge.repository.DocumentRepository;
+import com.clara.ops.challenge.document_management_service_challenge.controller.model.DocumentSearchFilters;
+import com.clara.ops.challenge.document_management_service_challenge.controller.model.PaginatedDocumentSearch;
+import com.clara.ops.challenge.document_management_service_challenge.controller.model.UploadRequest;
 import com.clara.ops.challenge.document_management_service_challenge.service.DocumentDBService;
 import com.clara.ops.challenge.document_management_service_challenge.service.MinioService;
 import com.clara.ops.challenge.document_management_service_challenge.utils.FileValidatorUtils;
-import io.minio.MinioClient;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -22,10 +22,7 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class DocumentController {
 
-    private final DocumentRepository documentRepository;
     private final FileValidatorUtils fileValidator;
-    private final MinioProperties minioProperties;
-    private final MinioClient minioClient;
     private final MinioService minioService;
     private final DocumentDBService documentDBService;
 
@@ -48,6 +45,17 @@ public class DocumentController {
                     return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                             .body("Failed to upload file: " + e.getMessage()));
                 });
+    }
+
+    @PostMapping("/search")
+    public Mono<PaginatedDocumentSearch> searchDocuments(@RequestBody DocumentSearchFilters filters,
+                                                         @RequestParam(defaultValue = "0") int page,
+                                                         @RequestParam(defaultValue = "20") int size) {
+        String[] tagsArray = filters.getTags() != null ? filters.getTags().stream().map(String::toLowerCase)
+                .toArray(String[]::new) : null;
+        int offset = page * size;
+
+        return documentDBService.getDocumentsByPaging(filters, tagsArray, offset, page, size);
     }
 
 
