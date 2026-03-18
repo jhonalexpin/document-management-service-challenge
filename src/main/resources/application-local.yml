@@ -1,0 +1,13 @@
+spring:
+  profiles:
+    active: local
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/challenge
+    username: challenge_user
+    password: password123
+
+app:
+  minio:
+    endpoint: http://localhost:9000
+    access-key: 9HNTC1S4B1XN9QJ3GDFU
+    secret-key: PUYcyJJeZs1TzIQ0NTAJyCTVaB0WYjbqLxUe+Lq8

@@ -1,28 +1,38 @@
 spring:
   codec:
-    max-in-memory-size: 500MB
+    max-in-memory-size: 10MB
   main:
     web-application-type: reactive
+    lazy-initialization: true
   servlet:
     multipart:
       enabled: false
+  r2dbc:
+    url: r2dbc:postgresql://postgresql:5432/challenge
+    username: challenge_user
+    password: password123
+    driver: postgresql
+    pool:
+      enabled: true
+    properties:
+      schema: document_schema
 
 server:
-  tomcat:
-    # Increase max connections for high concurrency
-    max-connections: 10000
-    # Increase threads if your processing is I/O bound
-    threads:
-      max: 200
-    # Connection timeout in milliseconds
-    connection-timeout: 30000
+  port: 8080
+  netty:
+    # Optimize for low memory
+    connection-timeout: 20s
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
 
 app:
   # Custom application properties can go here
   content-types-allowed:
     - application/pdf
   minio:
-    endpoint: http://localhost:9001
+    endpoint: ${MINIO_URL}
     access-key: ${MINIO_ROOT_USER_PROP}
     secret-key: ${MINIO_ROOT_PASSWORD_PROP}
     bucket-name: document-bucket

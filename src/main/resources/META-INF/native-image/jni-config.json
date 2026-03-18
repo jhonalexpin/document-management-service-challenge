@@ -1,0 +1,23 @@
+[
+  {
+    "name": "java.lang.Thread",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "io.netty.buffer.PooledByteBufAllocator",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "io.netty.channel.epoll.EpollEventLoop",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "org.postgresql.jdbc.PgConnection",
+    "allDeclaredConstructors": true,
+    "allDeclaredMethods": true
+  }
+]
+

@@ -1,23 +1,39 @@
-# Stage 1: Build the application
-FROM maven:3.9.6-eclipse-temurin-17 AS build
-WORKDIR /app
+# -------- Stage 1 : Native Image Builder --------
+FROM ghcr.io/graalvm/native-image-community:17 AS builder
 
-# Copy only the pom.xml first to cache dependencies
+WORKDIR /build
+
+# 1️⃣ Copy Maven wrapper and POM first
+COPY mvnw .
+COPY .mvn .mvn
 COPY pom.xml .
-RUN mvn dependency:go-offline
 
-# Copy source code and build the JAR
-COPY src ./src
-RUN mvn clean package -DskipTests
+# 2️⃣ Download dependencies (cached layer)
+RUN chmod +x mvnw && ./mvnw -B -q -e -C dependency:go-offline
 
-# Stage 2: Create the runtime image
-FROM eclipse-temurin:17-jre-alpine
+# 3️⃣ Copy source code after dependencies
+COPY src src
+
+# 4️⃣ Build native image
+RUN ./mvnw -Pnative -DskipTests clean native:compile \
+  -Dnative-image.xmx=4g \
+  -Dnative-image.build-args="\
+  --no-fallback,\
+  --parallelism=1,\
+  --gc=serial,\
+  -H:+StripDebugInfo,\
+  --initialize-at-run-time=io.netty.channel.epoll.Epoll,\
+  --initialize-at-run-time=io.netty.channel.kqueue.KQueue,\
+  --initialize-at-run-time=io.netty.channel.unix.Socket,\
+  --initialize-at-run-time=io.netty.util.internal.NativeLibraryUtil"
+
+# -------- Stage 2 : Minimal Runtime --------
+FROM alpine:3.19
 WORKDIR /app
+RUN apk add --no-cache gcompat libc6-compat libstdc++ zlib libssl3 libcrypto3
 
-# Copy the JAR from the build stage
-COPY --from=build /app/target/*.jar app.jar
+COPY --from=builder /build/target/document-management-service-challenge /app/application
 
-# Run the application
 EXPOSE 8080
-LABEL authors="jhona"
-ENTRYPOINT ["java", "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE:-prod}", "-jar", "app.jar"]
+
+ENTRYPOINT ["/app/application", "-Dio.netty.allocator.type=unpooled", "-Dio.netty.noPreferredDirect=true"]
