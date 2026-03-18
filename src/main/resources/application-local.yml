@@ -1,6 +1,4 @@
 spring:
-  profiles:
-    active: local
   r2dbc:
     url: r2dbc:postgresql://localhost:5432/challenge
     username: challenge_user
