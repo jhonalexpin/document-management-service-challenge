@@ -25,31 +25,21 @@
 		<spotless.maven.plugin.version>2.43.0</spotless.maven.plugin.version>
 		<googleJavaFormat.version>1.22.0</googleJavaFormat.version>
 
-		<minio.version>8.4.3</minio.version>
+		<minio.version>8.5.12</minio.version>
 	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-jpa</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
+			<artifactId>spring-boot-starter-data-r2dbc</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.postgresql</groupId>
-			<artifactId>postgresql</artifactId>
-			<scope>runtime</scope>
+			<artifactId>r2dbc-postgresql</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>io.minio</groupId>
 			<artifactId>minio</artifactId>
 			<version>${minio.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-devtools</artifactId>
-			<scope>runtime</scope>
 			<optional>true</optional>
 		</dependency>
 		<dependency>
@@ -65,11 +55,6 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webflux</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>s3</artifactId>
-			<version>2.25.0</version>
 		</dependency>
 	</dependencies>
 
@@ -91,11 +76,6 @@
 						</path>
 					</annotationProcessorPaths>
 				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.jacoco</groupId>
-				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>0.8.8</version>
 			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
@@ -165,5 +145,57 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>native</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.graalvm.buildtools</groupId>
+						<artifactId>native-maven-plugin</artifactId>
+						<version>0.10.1</version>
+						<extensions>true</extensions>
+						<executions>
+							<execution>
+								<id>build-native</id>
+								<goals>
+									<goal>compile</goal>
+								</goals>
+								<phase>package</phase>
+							</execution>
+						</executions>
+						<configuration>
+							<resources>
+								<includes>
+									<include>application*.yml</include>
+								</includes>
+							</resources>
+							<fallback>true</fallback>
+							<parallelism-limit>1</parallelism-limit>
+							<buildArgs>
+								<arg>--no-fallback</arg>
+								<arg>-J-Xmx4g</arg>
+								<arg>--initialize-at-run-time=org.postgresql.util</arg>
+								<arg>--initialize-at-run-time=io.netty.channel.epoll.Epoll</arg>
+								<arg>--initialize-at-run-time=io.netty.channel.kqueue.KQueue</arg>
+								<arg>--initialize-at-run-time=io.netty.channel.unix.Socket</arg>
+								<arg>--initialize-at-run-time=io.netty.util.internal.NativeLibraryUtil</arg>
+								<arg>--initialize-at-run-time=io.netty.util.internal.shaded.org.jctools.queues.unpadded.MpscUnpaddedArrayQueue</arg>
+								<arg>--initialize-at-run-time=io.netty.util.internal.shaded.org.jctools.util.UnsafeAccess</arg>
+								<arg>--initialize-at-run-time=io.netty.buffer.PoolThreadCache</arg>
+								<arg>--initialize-at-build-time=com.clara.ops.challenge.document_management_service_challenge.DocumentManagementServiceChallengeApplication</arg>
+								<arg>-Dio.netty.allocator.type=unpooled</arg>
+								<arg>-Dio.netty.noPreferredDirect=true</arg>
+								<arg>--allow-incomplete-classpath</arg>
+								<arg>--report-unsupported-elements-at-runtime</arg>
+							</buildArgs>
+							<imageName>document-management-service-challenge</imageName>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 
 </project>
