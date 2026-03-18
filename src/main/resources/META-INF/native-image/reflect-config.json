@@ -100,5 +100,12 @@
     "allPublicConstructors": true,
     "allDeclaredFields": true,
     "allPublicMethods": true
+  },
+  {
+    "name": "io.minio.GetPresignedObjectUrlArgs",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredFields": true,
+    "allPublicMethods": true
   }
 ]

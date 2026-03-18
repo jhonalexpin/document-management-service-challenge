@@ -158,6 +158,16 @@ Ensure that your solution includes the Dockerfile and database schema script, an
 
 If you have any additional notes, explanations, or assumptions regarding your implementation, feel free to include them in this section. This can help provide more context to reviewers.
 
+Comments from candidate:
+1. The most complicated part was to implement a native container to build the application and support the memory limitation of 50 MB
+2. The implementation was changed a few to don't use JPA and use spring-boot-starter-data-r2dbc library, this improves the time to build the application and container allowing to be more reactive.
+3. I prepared the application to have multiple profiles but there is one issue that I had to add the properties of datasource using the native container, so I had to set in the default profile to avoid any issue once the container is started but this can be fixed later.
+4. I'm choosing the native container since the application was developed to use reactive libraries like WebFlux. This is for streaming the files up to 500mb without any impact in the memory limitation.
+5. I couldn't complete the documentation because I spent a lot of time in the implementation, sorry :(
+6. The recommendation to improve the application to be more reactive, it's to use AWS s3 instead of MinIO, this also can be used with MinIO container.
+7. To generate the access key and secret key for MinIO API, I recommend to add the MinIO SDK commands instead of get them through MinIO console, it's more easy :)
+8. The application can start running `docker-compose --env-file ../.env.dev up --build` command
+
 ---
 
 **⚠️ Important Note About the Challenge Completion ⚠️**

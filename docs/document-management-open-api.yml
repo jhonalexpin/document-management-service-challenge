@@ -14,7 +14,7 @@ paths:
     post:
       tags:
         - Document Management
-      operationId: uploadDocument
+      operationId: uploadDocumentToMinio
       requestBody:
         content:
           application/json:

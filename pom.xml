@@ -24,6 +24,7 @@
 
 		<spotless.maven.plugin.version>2.43.0</spotless.maven.plugin.version>
 		<googleJavaFormat.version>1.22.0</googleJavaFormat.version>
+		<jacoco.version>0.8.12</jacoco.version>
 
 		<minio.version>8.5.12</minio.version>
 	</properties>
@@ -98,6 +99,7 @@
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco.version}</version>
 				<executions>
 					<execution>
 						<id>prepare-agent</id>
@@ -143,9 +145,11 @@
 				</configuration>
 				<executions>
 					<execution>
+						<id>spotless-check</id>
 						<goals>
 							<goal>check</goal>
 						</goals>
+						<phase>verify</phase>
 					</execution>
 				</executions>
 			</plugin>
