@@ -18,6 +18,10 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Service class for interacting with MinIO object storage.
+ * Handles file uploads and generation of pre-signed URLs.
+ */
 @Service
 @AllArgsConstructor
 public class MinioService {
@@ -26,6 +30,15 @@ public class MinioService {
     private final MinioProperties minioProperties;
     private final MinioClient minioClient;
 
+    /**
+     * Uploads a document to MinIO bucket.
+     * Uses piped streams to efficiently transfer data from the reactive FilePart to MinIO's input stream.
+     *
+     * @param filePart The file part containing the document content.
+     * @param user     The user ID associated with the document.
+     * @param name     The name of the document.
+     * @return A Mono emitting the S3 key (path) of the uploaded object upon success.
+     */
     public Mono<String> uploadDocumentToMinio(final FilePart filePart, final String user, final String name) {
         String s3Key = user + "/" + name;
 
@@ -62,6 +75,13 @@ public class MinioService {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
+    /**
+     * Generates a pre-signed URL for accessing an object in MinIO.
+     * The URL is valid for 24 hours.
+     *
+     * @param minioPath The path (key) of the object in the MinIO bucket.
+     * @return A Mono emitting the pre-signed URL string.
+     */
     public Mono<String> generatePresignedUrl(String minioPath) {
         return Mono.fromCallable(() -> minioClient.getPresignedObjectUrl(
                 GetPresignedObjectUrlArgs.builder()

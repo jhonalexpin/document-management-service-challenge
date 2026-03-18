@@ -14,12 +14,23 @@ import reactor.core.publisher.Mono;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Service class for handling database operations related to documents.
+ */
 @Service
 @AllArgsConstructor
 public class DocumentDBService {
 
     private DocumentRepository documentRepository;
 
+    /**
+     * Saves document metadata to the database.
+     *
+     * @param request   The upload request containing metadata like user, name, and tags.
+     * @param minioPath The path of the document in MinIO storage.
+     * @param file      The file part containing the uploaded file's details.
+     * @return A Mono emitting the saved Document entity.
+     */
     public Mono<Document> saveToDatabase(UploadRequest request, String minioPath, FilePart file) {
         Document doc = new Document();
         doc.setUserId(request.getUser());
@@ -34,6 +45,16 @@ public class DocumentDBService {
         return documentRepository.save(doc);
     }
 
+    /**
+     * Retrieves a paginated list of documents based on search filters.
+     *
+     * @param filters   The search criteria (user, name, tags).
+     * @param tagsArray An array of tags for filtering.
+     * @param offset    The starting offset for pagination.
+     * @param page      The current page number.
+     * @param size      The number of items per page.
+     * @return A Mono emitting a PaginatedDocumentSearch object with the search results.
+     */
     public Mono<PaginatedDocumentSearch> getDocumentsByPaging(DocumentSearchFilters filters, String[] tagsArray, int offset, int page, int size) {
         Mono<List<Document>> contentMono = documentRepository.findByFilters(filters.getUser(), filters.getName(), tagsArray, size, offset).collectList();
         Mono<Long> totalMono = documentRepository.countByFilters(filters.getUser(), filters.getName(), tagsArray);
@@ -53,6 +74,12 @@ public class DocumentDBService {
         });
     }
 
+    /**
+     * Converts a Document entity to a DocumentResponse DTO.
+     *
+     * @param doc The Document entity to convert.
+     * @return The corresponding DocumentResponse DTO.
+     */
     private DocumentResponse toDocumentResponse(Document doc) {
         DocumentResponse resp = new DocumentResponse();
         resp.setId(doc.getId());

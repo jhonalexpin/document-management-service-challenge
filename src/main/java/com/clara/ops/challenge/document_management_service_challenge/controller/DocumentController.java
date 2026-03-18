@@ -17,6 +17,10 @@ import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
+/**
+ * REST Controller for managing documents.
+ * Provides endpoints for uploading, searching, and downloading documents.
+ */
 @RestController
 @RequestMapping("/document-management")
 @AllArgsConstructor
@@ -29,7 +33,14 @@ public class DocumentController {
     private final DocumentRepository documentRepository;
 
 
-
+    /**
+     * Uploads a document to the system.
+     * The document is first uploaded to MinIO storage, and then its metadata is saved to the database.
+     *
+     * @param request  The metadata for the document (user, name, tags).
+     * @param filePart The file content to be uploaded. Only PDF files are supported.
+     * @return A ResponseEntity containing the status of the upload and the ID of the created document.
+     */
     @PostMapping(value="/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public Mono<ResponseEntity<String>> uploadDocument(@ModelAttribute UploadRequest request, @RequestPart("file") FilePart filePart) {
 
@@ -49,6 +60,14 @@ public class DocumentController {
                 });
     }
 
+    /**
+     * Searches for documents based on provided filters and pagination parameters.
+     *
+     * @param filters The search criteria (user, name, tags).
+     * @param page    The page number (0-based index).
+     * @param size    The number of items per page.
+     * @return A PaginatedDocumentSearch object containing the search results and pagination details.
+     */
     @PostMapping("/search")
     public Mono<PaginatedDocumentSearch> searchDocuments(@RequestBody DocumentSearchFilters filters,
                                                          @RequestParam(defaultValue = "0") int page,
@@ -60,6 +79,12 @@ public class DocumentController {
         return documentDBService.getDocumentsByPaging(filters, tagsArray, offset, page, size);
     }
 
+    /**
+     * Generates a pre-signed URL for downloading a specific document.
+     *
+     * @param documentId The ID of the document to download.
+     * @return A ResponseEntity containing the pre-signed URL if the document exists, or 404 Not Found.
+     */
     @GetMapping("/download/{documentId}")
     public Mono<ResponseEntity<String>> downloadDocument(@PathVariable Long documentId) {
         return documentRepository.findById(documentId)
