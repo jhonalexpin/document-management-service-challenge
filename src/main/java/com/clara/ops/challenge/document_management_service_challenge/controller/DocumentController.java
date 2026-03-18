@@ -4,6 +4,7 @@ package com.clara.ops.challenge.document_management_service_challenge.controller
 import com.clara.ops.challenge.document_management_service_challenge.controller.model.DocumentSearchFilters;
 import com.clara.ops.challenge.document_management_service_challenge.controller.model.PaginatedDocumentSearch;
 import com.clara.ops.challenge.document_management_service_challenge.controller.model.UploadRequest;
+import com.clara.ops.challenge.document_management_service_challenge.repository.DocumentRepository;
 import com.clara.ops.challenge.document_management_service_challenge.service.DocumentDBService;
 import com.clara.ops.challenge.document_management_service_challenge.service.MinioService;
 import com.clara.ops.challenge.document_management_service_challenge.utils.FileValidatorUtils;
@@ -25,6 +26,7 @@ public class DocumentController {
     private final FileValidatorUtils fileValidator;
     private final MinioService minioService;
     private final DocumentDBService documentDBService;
+    private final DocumentRepository documentRepository;
 
 
 
@@ -56,6 +58,14 @@ public class DocumentController {
         int offset = page * size;
 
         return documentDBService.getDocumentsByPaging(filters, tagsArray, offset, page, size);
+    }
+
+    @GetMapping("/download/{documentId}")
+    public Mono<ResponseEntity<String>> downloadDocument(@PathVariable Long documentId) {
+        return documentRepository.findById(documentId)
+                .flatMap(doc -> minioService.generatePresignedUrl(doc.getMinioPath()))
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
 

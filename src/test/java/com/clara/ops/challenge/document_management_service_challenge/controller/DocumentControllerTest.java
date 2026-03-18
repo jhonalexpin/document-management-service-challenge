@@ -5,6 +5,7 @@ import com.clara.ops.challenge.document_management_service_challenge.controller.
 import com.clara.ops.challenge.document_management_service_challenge.controller.model.PaginatedDocumentSearch;
 import com.clara.ops.challenge.document_management_service_challenge.controller.model.UploadRequest;
 import com.clara.ops.challenge.document_management_service_challenge.model.Document;
+import com.clara.ops.challenge.document_management_service_challenge.repository.DocumentRepository;
 import com.clara.ops.challenge.document_management_service_challenge.service.DocumentDBService;
 import com.clara.ops.challenge.document_management_service_challenge.service.MinioService;
 import com.clara.ops.challenge.document_management_service_challenge.utils.FileValidatorUtils;
@@ -25,6 +26,7 @@ import java.util.Objects;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,6 +37,9 @@ class DocumentControllerTest {
 
     @Mock
     private DocumentDBService documentDBService;
+
+    @Mock
+    private DocumentRepository documentRepository;
 
     @Mock
     private FileValidatorUtils fileValidator;
@@ -54,9 +59,9 @@ class DocumentControllerTest {
         when(fileValidator.isSupported(any(FilePart.class))).thenReturn(true);
         when(minioService.uploadDocumentToMinio(any(FilePart.class), any(String.class), any(String.class)))
                 .thenReturn(Mono.just("s3Key"));
-        com.clara.ops.challenge.document_management_service_challenge.model.Document savedDoc = new com.clara.ops.challenge.document_management_service_challenge.model.Document();
+        Document savedDoc = new Document();
         savedDoc.setId(1L);
-        when(documentDBService.saveToDatabase(any(UploadRequest.class), any(String.class), any(FilePart.class)))
+        when(documentDBService.saveToDatabase(any(UploadRequest.class), anyString(), any(FilePart.class)))
                 .thenReturn(Mono.just(savedDoc));
 
         StepVerifier.create(documentController.uploadDocument(request, filePart))
@@ -104,7 +109,7 @@ class DocumentControllerTest {
         when(fileValidator.isSupported(any(FilePart.class))).thenReturn(true);
         when(minioService.uploadDocumentToMinio(any(FilePart.class), any(String.class), any(String.class)))
                 .thenReturn(Mono.just("s3Key"));
-        when(documentDBService.saveToDatabase(any(UploadRequest.class), any(String.class), any(FilePart.class)))
+        when(documentDBService.saveToDatabase(any(UploadRequest.class), anyString(), any(FilePart.class)))
                 .thenReturn(Mono.error(new RuntimeException("DB error")));
 
         StepVerifier.create(documentController.uploadDocument(request, filePart))
@@ -153,7 +158,7 @@ class DocumentControllerTest {
 
         when(documentDBService.getDocumentsByPaging(
                 any(DocumentSearchFilters.class),
-                any(String[].class),
+                any(),
                 anyInt(),
                 anyInt(),
                 anyInt()
@@ -181,7 +186,7 @@ class DocumentControllerTest {
 
         when(documentDBService.getDocumentsByPaging(
                 any(DocumentSearchFilters.class),
-                any(String[].class),
+                any(),
                 anyInt(),
                 anyInt(),
                 anyInt()
@@ -200,7 +205,7 @@ class DocumentControllerTest {
 
         when(documentDBService.getDocumentsByPaging(
                 any(DocumentSearchFilters.class),
-                any(String[].class),
+                any(),
                 anyInt(),
                 anyInt(),
                 anyInt()
@@ -209,6 +214,54 @@ class DocumentControllerTest {
         StepVerifier.create(documentController.searchDocuments(filters, 0, 20))
                 .expectErrorMatches(throwable -> throwable instanceof RuntimeException &&
                         throwable.getMessage().equals("DB search failed"))
+                .verify();
+    }
+
+    @Test
+    void downloadDocument_success() {
+        Long docId = 1L;
+        String minioPath = "testUser/doc1.pdf";
+        String presignedUrl = "http://minio/url";
+
+        Document doc = new Document();
+        doc.setId(docId);
+        doc.setMinioPath(minioPath);
+
+        when(documentRepository.findById(docId)).thenReturn(Mono.just(doc));
+        when(minioService.generatePresignedUrl(minioPath)).thenReturn(Mono.just(presignedUrl));
+
+        StepVerifier.create(documentController.downloadDocument(docId))
+                .expectNextMatches(response -> response.getStatusCode() == HttpStatus.OK &&
+                        Objects.equals(response.getBody(), presignedUrl))
+                .verifyComplete();
+    }
+
+    @Test
+    void downloadDocument_notFound() {
+        Long docId = 1L;
+
+        when(documentRepository.findById(docId)).thenReturn(Mono.empty());
+
+        StepVerifier.create(documentController.downloadDocument(docId))
+                .expectNextMatches(response -> response.getStatusCode() == HttpStatus.NOT_FOUND)
+                .verifyComplete();
+    }
+
+    @Test
+    void downloadDocument_minioFails() {
+        Long docId = 1L;
+        String minioPath = "testUser/doc1.pdf";
+
+        Document doc = new Document();
+        doc.setId(docId);
+        doc.setMinioPath(minioPath);
+
+        when(documentRepository.findById(docId)).thenReturn(Mono.just(doc));
+        when(minioService.generatePresignedUrl(minioPath)).thenReturn(Mono.error(new RuntimeException("MinIO error")));
+
+        StepVerifier.create(documentController.downloadDocument(docId))
+                .expectErrorMatches(throwable -> throwable instanceof RuntimeException &&
+                        throwable.getMessage().equals("MinIO error"))
                 .verify();
     }
 }

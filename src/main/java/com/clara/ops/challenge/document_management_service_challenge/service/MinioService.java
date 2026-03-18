@@ -1,8 +1,10 @@
 package com.clara.ops.challenge.document_management_service_challenge.service;
 
 import com.clara.ops.challenge.document_management_service_challenge.config.MinioProperties;
+import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import io.minio.http.Method;
 import lombok.AllArgsConstructor;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.codec.multipart.FilePart;
@@ -14,7 +16,6 @@ import reactor.core.scheduler.Schedulers;
 import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
-import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -59,6 +60,17 @@ public class MinioService {
 
             return uploadFuture.join();
         }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+    public Mono<String> generatePresignedUrl(String minioPath) {
+        return Mono.fromCallable(() -> minioClient.getPresignedObjectUrl(
+                GetPresignedObjectUrlArgs.builder()
+                        .method(Method.GET)
+                        .bucket(minioProperties.getBucketName())
+                        .object(minioPath)
+                        .expiry(60 * 60 * 24) // 24 hours
+                        .build()
+        ));
     }
 
 }
